@@ -565,7 +565,7 @@ CFG.RARITY = {
 };
 
 /** 版本号（与软著申请名称一致） */
-CFG.VERSION = '3.1.3';
+CFG.VERSION = '3.1.4';
 /** 健康游戏忠告（开始界面全文展示） */
 CFG.HEALTH_NOTICE = [
   '抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。',
@@ -616,3 +616,5 @@ CFG.MIDBOSS_K = 0.7;
 
 /** 离线挂机：每小时基础收益，受「挂机达人」天赋加成；单次最长 8 小时 */
 CFG.OFFLINE = { candyPerH: 40, gemsPerH: 4, ticketsPerH: 0.25, maxH: 8 };
+// 首次添加到桌面的一次性奖励（抖音规则允许：仅在 addShortcut 成功回调里发放）
+CFG.SHORTCUT_GEMS = 30;

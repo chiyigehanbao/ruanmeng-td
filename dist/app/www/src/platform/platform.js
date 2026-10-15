@@ -11,7 +11,10 @@ var PLATFORM_CFG = {
     rewardedAdUnitId: 'adunit-xxxxxxxxxxxxxxxx',
     interstitialAdUnitId: 'adunit-yyyyyyyyyyyyyyyy',
     bannerAdUnitId: 'adunit-zzzzzzzzzzzzzzzz',
-    shareImage: 'share.png'
+    shareImage: 'share.png',
+    // TODO 订阅消息模板 ID：在抖音开放平台「开发管理 - 订阅消息」申请通过后填入（最多 3 个，同一次不可混用一次性/长期模板）。
+    // 留空则游戏内不显示订阅入口。例：['MSG1234567890abcdef']
+    subscribeTmplIds: []
   },
   douyin: {
     appId: 'tt0b317d8c9548f13202',
@@ -324,6 +327,21 @@ var Platform = {
   },
   sidebarGo: function () {
     this.A.sidebarGo && this.A.sidebarGo();
+  },
+  shortcutCheck: function (cb) {
+    if (this.A.shortcutCheck) this.A.shortcutCheck(cb);
+    else cb({ can: false, exist: false });
+  },
+  shortcutAdd: function (cb) {
+    if (this.A.shortcutAdd) this.A.shortcutAdd(cb);
+    else cb(false, 'noapi');
+  },
+  canSubscribe: function () {
+    return !!(this.A.canSubscribe && this.A.canSubscribe());
+  },
+  subscribe: function (cb) {
+    if (this.A.subscribe) this.A.subscribe(cb);
+    else cb('none');
   },
   fromSidebar: function () {
     return !!(this.A.fromSidebar && this.A.fromSidebar());

@@ -11,7 +11,10 @@ var PLATFORM_CFG = {
     rewardedAdUnitId: 'adunit-xxxxxxxxxxxxxxxx',
     interstitialAdUnitId: 'adunit-yyyyyyyyyyyyyyyy',
     bannerAdUnitId: 'adunit-zzzzzzzzzzzzzzzz',
-    shareImage: 'share.png'
+    shareImage: 'share.png',
+    // TODO 订阅消息模板 ID：在抖音开放平台「开发管理 - 订阅消息」申请通过后填入（最多 3 个，同一次不可混用一次性/长期模板）。
+    // 留空则游戏内不显示订阅入口。例：['MSG1234567890abcdef']
+    subscribeTmplIds: []
   },
   douyin: {
     appId: 'tt0b317d8c9548f13202',
@@ -354,6 +357,51 @@ var ADAPTERS = {
           }
         });
     },
+    // 添加到桌面：tt.addShortcut 必须在点击回调里同步调用
+    shortcutCheck: function (cb) {
+      if (typeof tt.addShortcut != 'function') return cb({ can: false, exist: false });
+      if (typeof tt.checkShortcut != 'function') return cb({ can: true, exist: false });
+      tt.checkShortcut({
+        success: function (r) {
+          var st = (r && r.status) || {};
+          cb({ can: true, exist: !!st.exist && !st.needUpdate });
+        },
+        fail: function () {
+          cb({ can: true, exist: false });
+        }
+      });
+    },
+    shortcutAdd: function (cb) {
+      if (typeof tt.addShortcut != 'function') return cb(false, 'noapi');
+      tt.addShortcut({
+        success: function () {
+          cb(true);
+        },
+        fail: function (e) {
+          cb(false, (e && e.errNo) || 'fail');
+        }
+      });
+    },
+    // 订阅消息：tt.requestSubscribeMessage 同样只能由点击触发
+    canSubscribe: function () {
+      return typeof tt.requestSubscribeMessage == 'function' && PLATFORM_CFG.douyin.subscribeTmplIds.length > 0;
+    },
+    subscribe: function (cb) {
+      var ids = PLATFORM_CFG.douyin.subscribeTmplIds.slice(0, 3);
+      if (typeof tt.requestSubscribeMessage != 'function' || !ids.length) return cb('none');
+      tt.requestSubscribeMessage({
+        tmplIds: ids,
+        success: function (r) {
+          var ok = ids.some(function (id) {
+            return r && r[id] == 'accept';
+          });
+          cb(ok ? 'ok' : 'reject');
+        },
+        fail: function () {
+          cb('fail');
+        }
+      });
+    },
     fromSidebar: function () {
       var o = (typeof __lastShow !== 'undefined' && __lastShow) || {};
       return o.launch_from == 'homepage' && (o.location == 'sidebar_card' || o.location == 'homepage_expand');
@@ -626,6 +674,21 @@ var Platform = {
   },
   sidebarGo: function () {
     this.A.sidebarGo && this.A.sidebarGo();
+  },
+  shortcutCheck: function (cb) {
+    if (this.A.shortcutCheck) this.A.shortcutCheck(cb);
+    else cb({ can: false, exist: false });
+  },
+  shortcutAdd: function (cb) {
+    if (this.A.shortcutAdd) this.A.shortcutAdd(cb);
+    else cb(false, 'noapi');
+  },
+  canSubscribe: function () {
+    return !!(this.A.canSubscribe && this.A.canSubscribe());
+  },
+  subscribe: function (cb) {
+    if (this.A.subscribe) this.A.subscribe(cb);
+    else cb('none');
   },
   fromSidebar: function () {
     return !!(this.A.fromSidebar && this.A.fromSidebar());

@@ -8,6 +8,7 @@ var App = {
   scene: 'title',
   go: function (s, arg) {
     if (s != this.scene) this.trans = 1;
+    this.prev = this.scene;
     this.scene = s;
     Platform.setBanner(s == 'map' || s == 'modes' || s == 'hero' || s == 'gacha');
     // BGM 热切换：战斗用激昂旋律，其余用菜单旋律

@@ -695,7 +695,7 @@ CFG.RARITY = {
 };
 
 /** 版本号（与软著申请名称一致） */
-CFG.VERSION = '3.1.3';
+CFG.VERSION = '3.1.4';
 /** 健康游戏忠告（开始界面全文展示） */
 CFG.HEALTH_NOTICE = [
   '抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。',
@@ -746,6 +746,8 @@ CFG.MIDBOSS_K = 0.7;
 
 /** 离线挂机：每小时基础收益，受「挂机达人」天赋加成；单次最长 8 小时 */
 CFG.OFFLINE = { candyPerH: 40, gemsPerH: 4, ticketsPerH: 0.25, maxH: 8 };
+// 首次添加到桌面的一次性奖励（抖音规则允许：仅在 addShortcut 成功回调里发放）
+CFG.SHORTCUT_GEMS = 30;
 
 
 // ---- src/core/storage.js ----
@@ -917,7 +919,10 @@ var PLATFORM_CFG = {
     rewardedAdUnitId: 'adunit-xxxxxxxxxxxxxxxx',
     interstitialAdUnitId: 'adunit-yyyyyyyyyyyyyyyy',
     bannerAdUnitId: 'adunit-zzzzzzzzzzzzzzzz',
-    shareImage: 'share.png'
+    shareImage: 'share.png',
+    // TODO 订阅消息模板 ID：在抖音开放平台「开发管理 - 订阅消息」申请通过后填入（最多 3 个，同一次不可混用一次性/长期模板）。
+    // 留空则游戏内不显示订阅入口。例：['MSG1234567890abcdef']
+    subscribeTmplIds: []
   },
   douyin: {
     appId: 'tt0b317d8c9548f13202',
@@ -1071,6 +1076,51 @@ var ADAPTERS = {
             tt.showToast({ title: '暂时无法打开侧边栏', icon: 'none' });
           }
         });
+    },
+    // 添加到桌面：tt.addShortcut 必须在点击回调里同步调用
+    shortcutCheck: function (cb) {
+      if (typeof tt.addShortcut != 'function') return cb({ can: false, exist: false });
+      if (typeof tt.checkShortcut != 'function') return cb({ can: true, exist: false });
+      tt.checkShortcut({
+        success: function (r) {
+          var st = (r && r.status) || {};
+          cb({ can: true, exist: !!st.exist && !st.needUpdate });
+        },
+        fail: function () {
+          cb({ can: true, exist: false });
+        }
+      });
+    },
+    shortcutAdd: function (cb) {
+      if (typeof tt.addShortcut != 'function') return cb(false, 'noapi');
+      tt.addShortcut({
+        success: function () {
+          cb(true);
+        },
+        fail: function (e) {
+          cb(false, (e && e.errNo) || 'fail');
+        }
+      });
+    },
+    // 订阅消息：tt.requestSubscribeMessage 同样只能由点击触发
+    canSubscribe: function () {
+      return typeof tt.requestSubscribeMessage == 'function' && PLATFORM_CFG.douyin.subscribeTmplIds.length > 0;
+    },
+    subscribe: function (cb) {
+      var ids = PLATFORM_CFG.douyin.subscribeTmplIds.slice(0, 3);
+      if (typeof tt.requestSubscribeMessage != 'function' || !ids.length) return cb('none');
+      tt.requestSubscribeMessage({
+        tmplIds: ids,
+        success: function (r) {
+          var ok = ids.some(function (id) {
+            return r && r[id] == 'accept';
+          });
+          cb(ok ? 'ok' : 'reject');
+        },
+        fail: function () {
+          cb('fail');
+        }
+      });
     },
     fromSidebar: function () {
       var o = (typeof __lastShow !== 'undefined' && __lastShow) || {};
@@ -1268,6 +1318,21 @@ var Platform = {
   },
   sidebarGo: function () {
     this.A.sidebarGo && this.A.sidebarGo();
+  },
+  shortcutCheck: function (cb) {
+    if (this.A.shortcutCheck) this.A.shortcutCheck(cb);
+    else cb({ can: false, exist: false });
+  },
+  shortcutAdd: function (cb) {
+    if (this.A.shortcutAdd) this.A.shortcutAdd(cb);
+    else cb(false, 'noapi');
+  },
+  canSubscribe: function () {
+    return !!(this.A.canSubscribe && this.A.canSubscribe());
+  },
+  subscribe: function (cb) {
+    if (this.A.subscribe) this.A.subscribe(cb);
+    else cb('none');
   },
   fromSidebar: function () {
     return !!(this.A.fromSidebar && this.A.fromSidebar());
@@ -10864,13 +10929,21 @@ var Menu = {
     UI.panel(16, 80, 328, 500, { title: '福利中心', border: '#ff9f43' });
     UI.pill(70, 108, 100, 26, 'gem', d.gems);
     UI.pill(190, 108, 100, 26, 'ticket', d.tickets);
-    var rows = CFG.WELFARE.map(function (it) {
-      return { it: it, ad: true };
-    }).concat(
-      Object.keys(CFG.SKINS).map(function (k) {
-        return { skin: k };
-      })
-    );
+    var self = this,
+      ex = [];
+    if (this.sc && this.sc.can && !this.sc.exist) ex.push({ sc: true });
+    if (Platform.canSubscribe()) ex.push({ sub: true });
+    var rows = ex
+      .concat(
+        CFG.WELFARE.map(function (it) {
+          return { it: it, ad: true };
+        })
+      )
+      .concat(
+        Object.keys(CFG.SKINS).map(function (k) {
+          return { skin: k };
+        })
+      );
     this.list(138, 556, rows.length * 76, function (y0) {
       rows.forEach(function (row, i) {
         var y = y0 + 6 + i * 76;
@@ -10881,7 +10954,52 @@ var Menu = {
         c.beginPath();
         c.arc(66, y + 34, 24, 0, 7);
         c.fill();
-        if (row.ad) {
+        if (row.sc) {
+          Art.icon(c, 'gift', 66, y + 34, 30);
+          UI.text('添加到桌面', 100, y + 22, 15, '#6a3a4a', { align: 'left', stroke: false });
+          UI.plain(
+            d.scGot ? '下次从桌面一点就进' : '首次添加送 ' + CFG.SHORTCUT_GEMS + ' 钻石',
+            100,
+            y + 46,
+            10.5,
+            '#a07080',
+            'left'
+          );
+          UI.button(
+            'wfsc',
+            246,
+            y + 16,
+            76,
+            36,
+            '添加',
+            '#ff6f9c',
+            function () {
+              self.addShortcut();
+            },
+            { size: 14 }
+          );
+        } else if (row.sub) {
+          Art.icon(c, 'mail', 66, y + 34, 30);
+          UI.text('收益提醒', 100, y + 22, 15, '#6a3a4a', { align: 'left', stroke: false });
+          UI.plain('离线收益攒满时提醒我一次', 100, y + 46, 10.5, '#a07080', 'left');
+          UI.button(
+            'wfsub',
+            246,
+            y + 16,
+            76,
+            36,
+            '提醒我',
+            '#4fa8ff',
+            function () {
+              Platform.subscribe(function (r) {
+                if (r == 'ok') UI.toast('好的，攒满了就提醒你', '#ffd23f');
+                else if (r == 'reject') UI.toast('已取消，随时可以再开', '#ffd6e0');
+                else UI.toast('提醒暂时用不了，稍后再试', '#ffd6e0');
+              });
+            },
+            { size: 14 }
+          );
+        } else if (row.ad) {
           var it = row.it,
             used = w[it.id] || 0,
             left = it.cap - used;
@@ -10941,6 +11059,56 @@ var Menu = {
       });
     });
     UI.plain('广告奖励每日 0 点重置 · 游戏内无任何付费项目', 180, 566, 10, '#a07080');
+  },
+  // 添加到桌面（必须在点击里同步调用）
+  addShortcut: function () {
+    var self = this,
+      d = Save.d;
+    Platform.shortcutAdd(function (ok, err) {
+      if (ok) {
+        d.scAdded = 1;
+        if (self.sc) self.sc.exist = true;
+        if (!d.scGot) {
+          d.scGot = 1;
+          d.gems += CFG.SHORTCUT_GEMS;
+          Sfx.play('coin');
+          UI.toast('已添加到桌面，送你 ' + CFG.SHORTCUT_GEMS + ' 钻石', '#ffd23f');
+        } else UI.toast('已添加到桌面', '#ffd23f');
+        Save.save && Save.save();
+      } else if (err != 21305) UI.toast('添加没成功，可以稍后再试', '#ffd6e0');
+    });
+  },
+  // 首次通关返回或第二次启动后，轻提示一次；点了以后再说则至少 3 天不再提
+  shortcutNudge: function () {
+    var d = Save.d,
+      self = this;
+    if (this.popup || this.scAsked || App.prev != 'game') return;
+    if (!this.sc || !this.sc.can || this.sc.exist || d.scAdded) return;
+    if (!(Object.keys(d.stars || {}).length >= 1 || (d.sessions || 0) >= 2)) return;
+    if (Date.now() - (d.scLater || 0) < 3 * 864e5) return;
+    this.scAsked = true;
+    this.popup = {
+      title: '添加到桌面',
+      border: '#ff6f9c',
+      lines: ['下次从手机桌面一点就能进来', d.scGot ? '' : '首次添加送 ' + CFG.SHORTCUT_GEMS + ' 钻石'].filter(Boolean),
+      btns: [
+        {
+          t: '添加',
+          c: '#ff6f9c',
+          f: function () {
+            self.addShortcut();
+          }
+        },
+        {
+          t: '以后再说',
+          c: '#b8b8c4',
+          f: function () {
+            d.scLater = Date.now();
+            Save.save && Save.save();
+          }
+        }
+      ]
+    };
   },
   drawPopup: function () {
     var p = this.popup,
@@ -11221,6 +11389,13 @@ var Menu = {
       ['codex', '图鉴', 'eye', '#ff6f9c', this.codexBadge()],
       ['share', '分享', 'share', '#5fcf6a', Save.d.shareDate != Save.today()]
     ];
+    if (this.sc === undefined) {
+      this.sc = null;
+      Platform.shortcutCheck(function (r) {
+        self.sc = r;
+      });
+    }
+    this.shortcutNudge();
     if (this.sidebarOk === undefined) {
       this.sidebarOk = false;
       Platform.sidebarCheck(function (ok) {
@@ -13474,6 +13649,7 @@ var App = {
   scene: 'title',
   go: function (s, arg) {
     if (s != this.scene) this.trans = 1;
+    this.prev = this.scene;
     this.scene = s;
     Platform.setBanner(s == 'map' || s == 'modes' || s == 'hero' || s == 'gacha');
     // BGM 热切换：战斗用激昂旋律，其余用菜单旋律
