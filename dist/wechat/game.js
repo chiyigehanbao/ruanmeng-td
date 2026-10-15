@@ -140,7 +140,7 @@ var CFG = {
   RANGE_K: 0.95,
   HP_K: 1.9,
   HP_END: 2.6,
-  HP_CH: [1.34, 1.12, 1.10, 1.18, 1.04, 0.86, 0.76],
+  HP_CH: [1.34, 1.12, 1.1, 1.18, 1.04, 0.86, 0.76],
   COLS: 5,
   ROWS: 3,
   CELL: 60,
@@ -695,7 +695,7 @@ CFG.RARITY = {
 };
 
 /** 版本号（与软著申请名称一致） */
-CFG.VERSION = '3.1.1';
+CFG.VERSION = '3.1.2';
 /** 健康游戏忠告（开始界面全文展示） */
 CFG.HEALTH_NOTICE = [
   '抵制不良游戏，拒绝盗版游戏。注意自我保护，谨防受骗上当。',
@@ -718,7 +718,7 @@ CFG.PRIVACY_LINES = [
   '本游戏不收集姓名、手机号、位置等个人信息',
   '游戏进度仅保存在本机',
   '广告由平台广告服务提供，遵循平台隐私规则',
-  '排行榜仅显示游戏内昵称与成绩',
+  '成绩纪录只保存在本机',
   '如需删除数据，清除小游戏缓存即可',
   '完整隐私政策可在平台小游戏资料页查看'
 ];
@@ -1311,11 +1311,19 @@ var Platform = {
       cb && cb(ok !== false);
     });
   },
-  // 排行榜：配置 serverUrl 后走服务端（wx.request / tt.request / fetch），否则本地模拟
+  // 排行榜：配置 serverUrl 后走服务端（wx.request / tt.request / fetch），否则只显示本机个人纪录
   submitScore: function (board, score) {
     var k = 'lb_' + board,
       b = Storage.get(k, 0);
     if (score > b) Storage.set(k, score);
+    if (score > 0) {
+      var h = Storage.get('lbh_' + board, []);
+      h.push({ s: score, t: Date.now() });
+      h.sort(function (x, y) {
+        return y.s - x.s;
+      });
+      Storage.set('lbh_' + board, h.slice(0, 10));
+    }
     if (this.server())
       this.request(
         'POST',
@@ -1342,35 +1350,17 @@ var Platform = {
       );
     });
   },
+  // 无服务端时：只展示本机的个人最佳纪录（前 10 次），不出现任何虚构玩家
+  online: function () {
+    return !!this.server();
+  },
   mockLeaderboard: function (board, cb) {
-    var names = [
-        '软软大王',
-        '喵喵队长',
-        '奶茶不加糖',
-        '果冻小可爱',
-        '星星眨眼',
-        '今天也很萌',
-        '熊熊冲鸭',
-        '兔兔那么可爱',
-        '小猪佩奇粉',
-        '企鹅啾啾',
-        '狐狸不吃葡萄',
-        '龙龙飞呀'
-      ],
-      seed = (Save.d.lbSeed + board.length * 97 + CFG.weekNo() * 13) % 997,
-      list = [];
-    var base = { endless: 60, daily: 15, bossrush: 14, weekly: 1800 }[board] || 50;
-    for (var i = 0; i < names.length; i++) {
-      seed = (seed * 16807) % 2147483647;
-      list.push({
-        name: names[i],
-        score: Math.max(1, Math.round(base * (1 - i * 0.07) * (0.85 + (seed % 100) / 400)))
-      });
-    }
-    var me = Storage.get('lb_' + board, 0);
-    list.push({ name: '我', score: me, me: true });
-    list.sort(function (a, b) {
-      return b.score - a.score;
+    var h = Storage.get('lbh_' + board, []),
+      best = Storage.get('lb_' + board, 0) || (board == 'endless' ? Save.d.best || 0 : 0);
+    if (!h.length && best > 0) h = [{ s: best, t: 0 }];
+    var list = h.map(function (x, i) {
+      var d = x.t ? new Date(x.t) : null;
+      return { name: d ? d.getMonth() + 1 + '月' + d.getDate() + '日' : '早前纪录', score: x.s, me: i == 0 };
     });
     setTimeout(function () {
       cb(list);
@@ -12428,7 +12418,8 @@ var Menu = {
   drawLB: function () {
     var c = UI.c,
       self = this;
-    UI.panel(16, 80, 328, 500, { title: '排行榜', border: '#ffb020' });
+    var ON = Platform.online();
+    UI.panel(16, 80, 328, 500, { title: ON ? '排行榜' : '我的纪录', border: '#ffb020' });
     var B = [
       ['endless', '无尽'],
       ['daily', '每日'],
@@ -12464,6 +12455,11 @@ var Menu = {
       UI.plain('加载中…', 180, 300, 13, '#a07080');
       return;
     }
+    if (!L.length) {
+      UI.plain('还没有纪录，去玩一局吧', 180, 300, 13, '#a07080');
+      UI.plain('本机最佳纪录，只保存在这台设备上', 180, 572, 10.5, '#a07080');
+      return;
+    }
     this.list(148, 568, L.length * 40, function (y0) {
       L.forEach(function (e, i) {
         var y = y0 + i * 40,
@@ -12477,7 +12473,7 @@ var Menu = {
         UI.plain('' + e.score, 310, y + 20, 13, '#ff9f43', 'right');
       });
     });
-    UI.plain('本周好友与同城榜（示意数据，正式上线接平台排行榜）', 180, 572, 10.5, '#a07080');
+    UI.plain(ON ? '全服排行（每周重置）' : '本机最佳纪录，只保存在这台设备上', 180, 572, 10.5, '#a07080');
   },
   drawEndless: function () {
     var c = UI.c,
@@ -12498,33 +12494,35 @@ var Menu = {
     });
     UI.plain('每 5 波首领 · 每 3 波精英 · 难度无限递增', 180, 212, 10, '#a07080');
     UI.plain('里程碑奖励（首次达成）', 180, 236, 12, '#7a6cff');
-    CFG.ENDLESS_MILESTONES.forEach(function (m, i) {
-      var y = 250 + i * 36,
-        ok = (d.best || 0) >= m.w,
-        cl = d.endlessMs[m.w];
-      c.fillStyle = ok ? '#f0eaff' : '#f4f2f6';
-      rr(c, 36, y, 288, 32, 10);
-      c.fill();
-      UI.plain('第 ' + m.w + ' 波', 80, y + 16, 12, '#6a3a4a');
-      Art.icon(c, m.r.gems ? 'gem' : 'candy', 160, y + 16, 16);
-      UI.plain('' + (m.r.gems || m.r.candy), 186, y + 16, 11, '#7a4a55');
-      UI.button(
-        'em' + m.w,
-        250,
-        y,
-        64,
-        32,
-        cl ? '已领' : ok ? '领取' : '未达成',
-        cl ? '#c8c0c8' : ok ? '#7a6cff' : '#c9b8c0',
-        function () {
-          if (cl || !ok) return;
-          d.endlessMs[m.w] = 1;
-          UI.toast('获得 ' + Meta.grant(m.r), '#ffd23f');
-          Sfx.play('coin');
-          Platform.vibrate(22);
-        },
-        { size: 11, disabled: cl || !ok, r: 10, pulse: ok && !cl }
-      );
+    self.list(248, 512, CFG.ENDLESS_MILESTONES.length * 36, function (y0) {
+      CFG.ENDLESS_MILESTONES.forEach(function (m, i) {
+        var y = y0 + 2 + i * 36,
+          ok = (d.best || 0) >= m.w,
+          cl = d.endlessMs[m.w];
+        c.fillStyle = ok ? '#f0eaff' : '#f4f2f6';
+        rr(c, 36, y, 288, 32, 10);
+        c.fill();
+        UI.plain('第 ' + m.w + ' 波', 80, y + 16, 12, '#6a3a4a');
+        Art.icon(c, m.r.gems ? 'gem' : 'candy', 160, y + 16, 16);
+        UI.plain('' + (m.r.gems || m.r.candy), 186, y + 16, 11, '#7a4a55');
+        UI.button(
+          'em' + m.w,
+          250,
+          y,
+          64,
+          32,
+          cl ? '已领' : ok ? '领取' : '未达成',
+          cl ? '#c8c0c8' : ok ? '#7a6cff' : '#c9b8c0',
+          function () {
+            if (cl || !ok) return;
+            d.endlessMs[m.w] = 1;
+            UI.toast('获得 ' + Meta.grant(m.r), '#ffd23f');
+            Sfx.play('coin');
+            Platform.vibrate(22);
+          },
+          { size: 11, disabled: cl || !ok, r: 10, pulse: ok && !cl }
+        );
+      });
     });
     UI.button(
       'enlb',
@@ -12532,7 +12530,7 @@ var Menu = {
       520,
       130,
       40,
-      '排行榜',
+      Platform.online() ? '排行榜' : '我的纪录',
       '#ffb020',
       function () {
         self.lbBoard = 'endless';

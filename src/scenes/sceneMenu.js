@@ -2023,7 +2023,8 @@ var Menu = {
   drawLB: function () {
     var c = UI.c,
       self = this;
-    UI.panel(16, 80, 328, 500, { title: '排行榜', border: '#ffb020' });
+    var ON = Platform.online();
+    UI.panel(16, 80, 328, 500, { title: ON ? '排行榜' : '我的纪录', border: '#ffb020' });
     var B = [
       ['endless', '无尽'],
       ['daily', '每日'],
@@ -2059,6 +2060,11 @@ var Menu = {
       UI.plain('加载中…', 180, 300, 13, '#a07080');
       return;
     }
+    if (!L.length) {
+      UI.plain('还没有纪录，去玩一局吧', 180, 300, 13, '#a07080');
+      UI.plain('本机最佳纪录，只保存在这台设备上', 180, 572, 10.5, '#a07080');
+      return;
+    }
     this.list(148, 568, L.length * 40, function (y0) {
       L.forEach(function (e, i) {
         var y = y0 + i * 40,
@@ -2072,7 +2078,7 @@ var Menu = {
         UI.plain('' + e.score, 310, y + 20, 13, '#ff9f43', 'right');
       });
     });
-    UI.plain('本周好友与同城榜（示意数据，正式上线接平台排行榜）', 180, 572, 10.5, '#a07080');
+    UI.plain(ON ? '全服排行（每周重置）' : '本机最佳纪录，只保存在这台设备上', 180, 572, 10.5, '#a07080');
   },
   drawEndless: function () {
     var c = UI.c,
@@ -2093,33 +2099,35 @@ var Menu = {
     });
     UI.plain('每 5 波首领 · 每 3 波精英 · 难度无限递增', 180, 212, 10, '#a07080');
     UI.plain('里程碑奖励（首次达成）', 180, 236, 12, '#7a6cff');
-    CFG.ENDLESS_MILESTONES.forEach(function (m, i) {
-      var y = 250 + i * 36,
-        ok = (d.best || 0) >= m.w,
-        cl = d.endlessMs[m.w];
-      c.fillStyle = ok ? '#f0eaff' : '#f4f2f6';
-      rr(c, 36, y, 288, 32, 10);
-      c.fill();
-      UI.plain('第 ' + m.w + ' 波', 80, y + 16, 12, '#6a3a4a');
-      Art.icon(c, m.r.gems ? 'gem' : 'candy', 160, y + 16, 16);
-      UI.plain('' + (m.r.gems || m.r.candy), 186, y + 16, 11, '#7a4a55');
-      UI.button(
-        'em' + m.w,
-        250,
-        y,
-        64,
-        32,
-        cl ? '已领' : ok ? '领取' : '未达成',
-        cl ? '#c8c0c8' : ok ? '#7a6cff' : '#c9b8c0',
-        function () {
-          if (cl || !ok) return;
-          d.endlessMs[m.w] = 1;
-          UI.toast('获得 ' + Meta.grant(m.r), '#ffd23f');
-          Sfx.play('coin');
-          Platform.vibrate(22);
-        },
-        { size: 11, disabled: cl || !ok, r: 10, pulse: ok && !cl }
-      );
+    self.list(248, 512, CFG.ENDLESS_MILESTONES.length * 36, function (y0) {
+      CFG.ENDLESS_MILESTONES.forEach(function (m, i) {
+        var y = y0 + 2 + i * 36,
+          ok = (d.best || 0) >= m.w,
+          cl = d.endlessMs[m.w];
+        c.fillStyle = ok ? '#f0eaff' : '#f4f2f6';
+        rr(c, 36, y, 288, 32, 10);
+        c.fill();
+        UI.plain('第 ' + m.w + ' 波', 80, y + 16, 12, '#6a3a4a');
+        Art.icon(c, m.r.gems ? 'gem' : 'candy', 160, y + 16, 16);
+        UI.plain('' + (m.r.gems || m.r.candy), 186, y + 16, 11, '#7a4a55');
+        UI.button(
+          'em' + m.w,
+          250,
+          y,
+          64,
+          32,
+          cl ? '已领' : ok ? '领取' : '未达成',
+          cl ? '#c8c0c8' : ok ? '#7a6cff' : '#c9b8c0',
+          function () {
+            if (cl || !ok) return;
+            d.endlessMs[m.w] = 1;
+            UI.toast('获得 ' + Meta.grant(m.r), '#ffd23f');
+            Sfx.play('coin');
+            Platform.vibrate(22);
+          },
+          { size: 11, disabled: cl || !ok, r: 10, pulse: ok && !cl }
+        );
+      });
     });
     UI.button(
       'enlb',
@@ -2127,7 +2135,7 @@ var Menu = {
       520,
       130,
       40,
-      '排行榜',
+      Platform.online() ? '排行榜' : '我的纪录',
       '#ffb020',
       function () {
         self.lbBoard = 'endless';
