@@ -136,7 +136,7 @@ function minigame(name, appid, extraCfg) {
       Object.assign(
         {
           appid: appid,
-          projectname: 'ruanmeng-td',
+          projectname: '软萌大作战',
           compileType: 'game',
           setting: { es6: true, minified: true, urlCheck: false },
           libVersion: 'latest'

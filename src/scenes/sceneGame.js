@@ -110,7 +110,6 @@ var GS = {
         });
         FX.ring(sp.x, sp.y, 36, '#ffd23f', 0.35);
         Sfx.play('place');
-        Platform.vibrate(12);
         break;
       case 'merge':
         var p = g.tpos(d),
@@ -241,7 +240,14 @@ var GS = {
           FX.shake = 10;
           this.showBanner(
             CFG.TOWERS[d.t.type].name,
-            { cosmos: '星海吞噬！', meteor: '流星火雨！', gaia: '万物生长！', volley: '万箭齐发！', verdant: '苍翠绽放！', storm: '雷暴领域！' }[d.k] || '',
+            {
+              cosmos: '星海吞噬！',
+              meteor: '流星火雨！',
+              gaia: '万物生长！',
+              volley: '万箭齐发！',
+              verdant: '苍翠绽放！',
+              storm: '雷暴领域！'
+            }[d.k] || '',
             CFG.TOWERS[d.t.type].color
           );
         }
@@ -421,7 +427,6 @@ var GS = {
         break;
       case 'waveStart':
         Sfx.play('wave');
-        Platform.vibrate(20);
         if (!g.isBossWave(d)) this.showBanner('第 ' + d + ' 波', '', '#ff8fb1');
         break;
       case 'pigGold':
@@ -452,7 +457,6 @@ var GS = {
         var sp = g.tpos(d.t);
         FX.text(sp.x, sp.y, '+' + d.v, { color: '#ffd23f', size: 16 });
         Sfx.play('coin');
-        Platform.vibrate(12);
         break;
       case 'storm':
         UI.toast('暴风雪来袭！', '#bfe9ff');
@@ -597,7 +601,10 @@ var GS = {
       return u.t < 1.6;
     });
     this.updAmb(dt);
-    var sdt = this.paused || g.pendingBranch || this.popup || this.cine || (this.bossIntro && this.bossIntro.t < 1.8) ? 0 : dt * this.speed;
+    var sdt =
+      this.paused || g.pendingBranch || this.popup || this.cine || (this.bossIntro && this.bossIntro.t < 1.8)
+        ? 0
+        : dt * this.speed;
     for (var i = 0; i < 2; i++) g.update(sdt / 2);
     g.towers.forEach(function (t) {
       if (t.pop > 0) t.pop -= dt;
@@ -1760,7 +1767,6 @@ var GS = {
         function () {
           self.popup = null;
           Sfx.play('click');
-          Platform.vibrate(12);
         },
         { size: 15, pulse: true }
       );
@@ -1899,7 +1905,6 @@ var GS = {
       function () {
         self.paused = true;
         Sfx.play('click');
-        Platform.vibrate(10);
       },
       { icon: 'pause', iconSize: 18, r: 12 }
     );
@@ -1915,7 +1920,6 @@ var GS = {
         self.speed = self.speed == 1 ? 2 : 1;
         Storage.set('speed', self.speed);
         Sfx.play('click');
-        Platform.vibrate(10);
         UI.toast(self.speed > 1 ? '二倍速' : '一倍速', '#8fd3ff');
       },
       { size: 12, r: 12 }
@@ -1952,7 +1956,6 @@ var GS = {
               g.gold += cost;
               g.buy(null);
               Sfx.play('coin');
-              Platform.vibrate(18);
               UI.toast('免费召唤成功（本局 ' + g.adSummons + '/' + CFG.AD_SUMMONS + '）', '#9be7a0');
             });
           } else UI.toast('金币不足', '#ffd6e0');
@@ -2100,7 +2103,6 @@ var GS = {
       function () {
         g.sell(tw);
         self.sel = null;
-        Platform.vibrate(14);
       },
       { size: 13, icon: 'coin' }
     );
@@ -2124,7 +2126,15 @@ var GS = {
     c.lineWidth = 3;
     rr(c, 28, cy - 36, CFG.W - 56, 110, 16);
     c.stroke();
-    Art.enemy(c, { boss: boss, type: boss.id, phase: t, hitT: 0, r: boss.r || 28, color: col }, CFG.W / 2, cy - 70, 92, UI.t, 0);
+    Art.enemy(
+      c,
+      { boss: boss, type: boss.id, phase: t, hitT: 0, r: boss.r || 28, color: col },
+      CFG.W / 2,
+      cy - 70,
+      92,
+      UI.t,
+      0
+    );
     UI.text(boss.name, CFG.W / 2, cy + 18, 22, col, { stroke: '#fff', sw: 5 });
     UI.plain(boss.skill || '', CFG.W / 2, cy + 42, 13, '#ffe0a0');
     UI.plain('首领登场', CFG.W / 2, cy - 48, 12, '#ffb0c0');
@@ -2398,7 +2408,6 @@ var GS = {
           g.reroll('ad');
           self.pickT = 0;
           Sfx.play('card');
-          Platform.vibrate(12);
         });
       },
       { icon: 'ad', size: 13, disabled: !g.adReroll }
@@ -2420,7 +2429,6 @@ var GS = {
       function () {
         self.paused = false;
         Sfx.play('click');
-        Platform.vibrate(10);
       },
       { size: 17 }
     );
@@ -2435,7 +2443,6 @@ var GS = {
       function () {
         self.paused = false;
         Sfx.play('click');
-        Platform.vibrate(12);
         self.start(self.level);
       },
       { size: 17 }
@@ -2451,7 +2458,6 @@ var GS = {
       function () {
         self.paused = false;
         Sfx.play('click');
-        Platform.vibrate(10);
         App.go(GS.backScene());
       },
       { size: 17 }
@@ -2469,7 +2475,6 @@ var GS = {
         Save.d.mute = Sfx.muted;
         Save.save();
         if (!Sfx.muted) Sfx.play('click');
-        Platform.vibrate(10);
         UI.toast(Sfx.muted ? '已静音' : '声音已开', '#8fd3ff');
       },
       { icon: Sfx.muted ? 'mute' : 'sound', size: 15 }
@@ -2675,7 +2680,6 @@ var GS = {
         '#8fd3ff',
         function () {
           Sfx.play('click');
-          Platform.vibrate(12);
           Platform.showInterstitial();
           App.go(GS.backScene());
         },
@@ -2691,7 +2695,6 @@ var GS = {
         '#ff9f43',
         function () {
           Sfx.play('click');
-          Platform.vibrate(12);
           Platform.showInterstitial();
           self.start(L.mode == 'endless' ? CFG.endlessInfo() : L);
         },
@@ -2708,7 +2711,6 @@ var GS = {
           '#5fcf6a',
           function () {
             Sfx.play('click');
-            Platform.vibrate(14);
             Platform.showInterstitial();
             self.start(next);
           },

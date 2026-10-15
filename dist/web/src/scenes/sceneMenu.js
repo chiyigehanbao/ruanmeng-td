@@ -160,7 +160,6 @@ var Menu = {
       Sfx.init();
       Sfx.bgm();
       Sfx.play('card');
-      Platform.vibrate(18);
       App.go('map');
     });
     UI.button(
@@ -243,7 +242,6 @@ var Menu = {
           Save.d.talents[tl.id] = lv + 1;
           Save.save();
           Sfx.play('upgrade');
-          Platform.vibrate(16);
           UI.toast(tl.name + ' 升级!', '#ffd23f');
         },
         { icon: max ? null : 'candy', size: 13, disabled: max }
@@ -489,7 +487,6 @@ var Menu = {
         function () {
           self.popup = null;
           Sfx.play('click');
-          Platform.vibrate(10);
           b.f && b.f();
         },
         { icon: b.icon, size: 15, pulse: i == 0 }
@@ -685,7 +682,6 @@ var Menu = {
         function () {
           self.chapter--;
           Sfx.play('click');
-          Platform.vibrate(10);
         },
         { size: 22, r: 12 }
       );
@@ -702,7 +698,6 @@ var Menu = {
           if (Save.levelOpen(self.chapter + 1, 1)) {
             self.chapter++;
             Sfx.play('click');
-            Platform.vibrate(10);
           } else UI.toast('通关本章解锁下一章', '#ffd6e0');
         },
         { size: 22, r: 12, allowDis: true }
@@ -892,7 +887,6 @@ var Menu = {
         Save.d.mute = Sfx.muted;
         Save.save();
         if (!Sfx.muted) Sfx.play('click');
-        Platform.vibrate(10);
         UI.toast(Sfx.muted ? '已静音' : '声音已开', '#8fd3ff');
       },
       { icon: Sfx.muted ? 'mute' : 'sound', iconSize: 20, r: 12 }
@@ -956,7 +950,6 @@ var Menu = {
         on ? n[3] : shade(n[3], 0.35),
         function () {
           Sfx.play('click');
-          Platform.vibrate(10);
           if (n[0] == 'welfare') self.open('welfare');
           else self.go(n[0]);
         },
@@ -1148,7 +1141,6 @@ var Menu = {
               return;
             }
             Sfx.play('click');
-            Platform.vibrate(12);
             if (m[0] == 'endless') self.open('endless');
             else if (m[0] == 'daily') App.go('game', CFG.dailyInfo());
             else if (m[0] == 'exp') {
@@ -1253,7 +1245,6 @@ var Menu = {
               d.hero = k;
               Save.save();
               Sfx.play('card');
-              Platform.vibrate(14);
               UI.toast('出战：' + H.name, '#ffd23f');
             });
           else UI.plain('扭蛋获得', x + 80, y + 132, 10, '#ff6f9c');
@@ -1302,7 +1293,6 @@ var Menu = {
                 }
                 Save.save();
                 Sfx.play('card');
-                Platform.vibrate(14);
               },
               { size: 12 }
             );
@@ -1353,7 +1343,6 @@ var Menu = {
                 else d.skinOn[S.type] = k;
                 Save.save();
                 Sfx.play('card');
-                Platform.vibrate(14);
               },
               { size: 13 }
             );
@@ -1486,7 +1475,6 @@ var Menu = {
         '#ff9f43',
         function () {
           Sfx.play('click');
-          Platform.vibrate(10);
           self.open('welfare');
         },
         { size: 12, r: 12, pulse: true, icon: 'ad' }
@@ -1500,7 +1488,6 @@ var Menu = {
     if (this.pulling) return;
     this.pulling = true;
     Sfx.play('gacha');
-    Platform.vibrate(15);
     Meta.pull(n, function (r, err) {
       self.pulling = false;
       if (!r) {
@@ -1731,7 +1718,6 @@ var Menu = {
       '#8fd3ff',
       function () {
         Sfx.play('click');
-        Platform.vibrate(10);
         self.go('modes');
       },
       { size: 11, r: 10 }
@@ -2154,7 +2140,6 @@ var Menu = {
       '#7a6cff',
       function () {
         Sfx.play('click');
-        Platform.vibrate(16);
         App.go('game', CFG.endlessInfo());
       },
       { size: 15, pulse: true }
@@ -2214,7 +2199,6 @@ var Menu = {
       '#ff9f43',
       function () {
         Sfx.play('click');
-        Platform.vibrate(16);
         App.go('game', CFG.weeklyInfo());
       },
       { size: 15, pulse: true }

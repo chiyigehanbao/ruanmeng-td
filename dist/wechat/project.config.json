@@ -1,6 +1,6 @@
 {
   "appid": "touristappid",
-  "projectname": "ruanmeng-td",
+  "projectname": "软萌大作战",
   "compileType": "game",
   "setting": {
     "es6": true,
