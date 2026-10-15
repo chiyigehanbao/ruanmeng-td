@@ -7,3 +7,11 @@ art_v31/
 art_raw/
 *.log
 .DS_Store
+
+# 软著真实材料只保留在本地
+docs/软著/
+docs/launch/ruanzhu_form.md
+tools/gen_manual.py
+tools/gen_source_doc.py
+__pycache__/
+*.pyc
