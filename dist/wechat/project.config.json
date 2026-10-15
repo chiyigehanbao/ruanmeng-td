@@ -1,0 +1,12 @@
+{
+  "appid": "touristappid",
+  "projectname": "ruanmeng-td",
+  "compileType": "game",
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "urlCheck": false
+  },
+  "libVersion": "latest",
+  "description": "软萌大作战 微信小游戏"
+}

@@ -1,0 +1,9 @@
+node_modules/
+art_v4/
+art_v8/
+art_v8_enh/
+art_v30/
+art_v31/
+art_raw/
+*.log
+.DS_Store

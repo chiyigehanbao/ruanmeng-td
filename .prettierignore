@@ -1,0 +1,6 @@
+dist/
+node_modules/
+assets/atlas.js
+art_*/
+shots/
+sheets/

@@ -1,0 +1,18 @@
+{
+  "deviceOrientation": "portrait",
+  "showStatusBar": false,
+  "networkTimeout": {
+    "request": 10000,
+    "downloadFile": 10000
+  },
+  "subPackages": [
+    {
+      "name": "art",
+      "root": "art/"
+    },
+    {
+      "name": "art2",
+      "root": "art2/"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "appid": "tt0b317d8c9548f13202",
+  "projectname": "ruanmeng-td",
+  "compileType": "game",
+  "setting": {
+    "es6": true,
+    "minified": true,
+    "urlCheck": false
+  },
+  "libVersion": "latest",
+  "description": "软萌大作战 抖音小游戏"
+}
