@@ -165,3 +165,8 @@ python3 tools/gen_manual.py --pdf        # 软件说明书（使用 shots/ 中�
 - `/api/lb/submit`、`/api/lb/query`：排行榜
 
 把 `PLATFORM_CFG.mode` 设为 `'server'` 后启用。自测：`node dev/serverTest.js`。
+
+
+## 项目展示
+
+面试介绍与讲解方向见 [项目展示说明](docs/PORTFOLIO.md)。
